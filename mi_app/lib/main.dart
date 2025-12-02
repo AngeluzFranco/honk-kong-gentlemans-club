@@ -114,36 +114,90 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.directions_car,
-              size: 120,
-              color: Colors.white,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'AutoManager',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2563EB), // primary
+              Color(0xFF3B82F6), // secondary
+              Color(0xFF0EA5E9), // accent
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo con efecto de elevación
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.directions_car_rounded,
+                  size: 100,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 40),
+              // Título con sombra
+              Text(
+                'AutoManager',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 36,
+                      letterSpacing: 1.2,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+              ),
+              const SizedBox(height: 12),
+              // Subtítulo
+              Text(
+                'Gestiona tus vehículos',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 0.5,
+                    ),
+              ),
+              const SizedBox(height: 60),
+              // Indicador de carga moderno
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    strokeWidth: 3,
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gestiona tus vehículos',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white70,
-                  ),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(
-              color: Colors.white,
-            ),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

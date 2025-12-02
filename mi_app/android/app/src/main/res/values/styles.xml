@@ -5,6 +5,12 @@
         <!-- Show a splash screen on the activity. Automatically removed when
              the Flutter engine draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Status bar color matching the gradient -->
+        <item name="android:statusBarColor">#2563EB</item>
+        <!-- Navigation bar color -->
+        <item name="android:navigationBarColor">#0EA5E9</item>
+        <!-- Light status bar icons -->
+        <item name="android:windowLightStatusBar">false</item>
     </style>
     <!-- Theme applied to the Android Window as soon as the process has started.
          This theme determines the color of the Android Window while your
