@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/vehicle_model.dart';
 import '../../viewmodels/vehicle_viewmodel.dart';
 import '../../widgets/vehicle_image.dart';
@@ -55,55 +56,234 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     }
   }
 
+  Future<void> _openGoogleMaps(double latitude, double longitude) async {
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
+    
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir Google Maps')),
+        );
+      }
+    }
+  }
+
+  void _showFullImage(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            children: [
+              // Imagen completa
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: VehicleImage(
+                        imageUrl: _currentVehicle.imageUrl,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            // Botón de cerrar
+            Positioned(
+              top: 20,
+              right: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.black),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Cerrar',
+                ),
+              ),
+            ),
+            // Indicador de zoom
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.pinch_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'Pellizca para hacer zoom',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle del Vehículo'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: _navigateToEdit,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Imagen
-            VehicleImage(
-              imageUrl: _currentVehicle.imageUrl,
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.cover,
+      body: CustomScrollView(
+        slivers: [
+          // Header con gradiente
+          SliverAppBar(
+            expandedHeight: 280,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                '${_currentVehicle.brand} ${_currentVehicle.model}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  letterSpacing: -0.5,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 3.0,
+                      color: Color.fromARGB(100, 0, 0, 0),
+                    ),
+                  ],
+                ),
+              ),
+              background: GestureDetector(
+                onTap: () => _showFullImage(context),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Imagen del vehículo
+                    Hero(
+                      tag: 'vehicle-${_currentVehicle.id}',
+                      child: VehicleImage(
+                        imageUrl: _currentVehicle.imageUrl,
+                        height: 280,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    // Gradiente overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                  onPressed: _navigateToEdit,
+                  tooltip: 'Editar',
+                ),
+              ),
+            ],
+          ),
 
-            Padding(
+          // Contenido
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título
-                  Text(
-                    '${_currentVehicle.brand} ${_currentVehicle.model}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 24),
 
                   // Información básica
                   _InfoCard(
                     title: 'Información General',
+                    icon: Icons.info_rounded,
+                    iconColor: Theme.of(context).primaryColor,
                     children: [
-                      _InfoRow(label: 'Año', value: _currentVehicle.year.toString()),
-                      _InfoRow(label: 'Color', value: _currentVehicle.color),
-                      _InfoRow(label: 'Placa', value: _currentVehicle.licensePlate),
+                      _InfoRow(
+                        icon: Icons.calendar_today_rounded,
+                        iconColor: Colors.orange,
+                        label: 'Año',
+                        value: _currentVehicle.year.toString(),
+                      ),
+                      _InfoRow(
+                        icon: Icons.palette_rounded,
+                        iconColor: Colors.purple,
+                        label: 'Color',
+                        value: _currentVehicle.color,
+                      ),
+                      _InfoRow(
+                        icon: Icons.credit_card_rounded,
+                        iconColor: Colors.blue,
+                        label: 'Placa',
+                        value: _currentVehicle.licensePlate,
+                      ),
                       if (_currentVehicle.vin != null)
-                        _InfoRow(label: 'VIN', value: _currentVehicle.vin!),
+                        _InfoRow(
+                          icon: Icons.qr_code_rounded,
+                          iconColor: Colors.teal,
+                          label: 'Número de Serie',
+                          value: _currentVehicle.vin!,
+                        ),
                       if (_currentVehicle.mileage != null)
                         _InfoRow(
+                          icon: Icons.speed_rounded,
+                          iconColor: Colors.red,
                           label: 'Kilometraje',
                           value: '${_currentVehicle.mileage!.toStringAsFixed(0)} km',
                         ),
@@ -115,8 +295,12 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   if (_currentVehicle.lastServiceDate != null)
                     _InfoCard(
                       title: 'Mantenimiento',
+                      icon: Icons.build_rounded,
+                      iconColor: Colors.green,
                       children: [
                         _InfoRow(
+                          icon: Icons.event_rounded,
+                          iconColor: Colors.green,
                           label: 'Último Servicio',
                           value: _currentVehicle.lastServiceDate!,
                         ),
@@ -128,108 +312,162 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                     const SizedBox(height: 16),
                     _InfoCard(
                       title: 'Notas',
+                      icon: Icons.note_rounded,
+                      iconColor: Colors.amber,
                       children: [
-                        Text(
-                          _currentVehicle.notes!,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            _currentVehicle.notes!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[800],
+                                ),
+                          ),
                         ),
                       ],
                     ),
                   ],
 
-                  // Mapa de ubicación (Deshabilitado - requiere API Key)
+                  // Mapa de ubicación
                   if (_currentVehicle.latitude != null && _currentVehicle.longitude != null) ...[
                     const SizedBox(height: 16),
                     _InfoCard(
                       title: 'Ubicación',
+                      icon: Icons.location_on_rounded,
+                      iconColor: Colors.red,
                       children: [
-                        Container(
-                          height: 200,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 60,
-                                color: Colors.grey[400],
+                        InkWell(
+                          onTap: () => _openGoogleMaps(_currentVehicle.latitude!, _currentVehicle.longitude!),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            height: 180,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.blue[50]!,
+                                  Colors.blue[100]!,
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Mapa no disponible',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.blue.withOpacity(0.3),
+                                width: 2,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Configura Google Maps API Key',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Lat: ${_currentVehicle.latitude!.toStringAsFixed(6)}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                'Lng: ${_currentVehicle.longitude!.toStringAsFixed(6)}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // GoogleMap comentado hasta configurar API Key
-                        /* 
-                        SizedBox(
-                          height: 200,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: LatLng(
-                                  vehicle.latitude!,
-                                  vehicle.longitude!,
-                                ),
-                                zoom: 15,
-                              ),
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('vehicle_location'),
-                                  position: LatLng(
-                                    vehicle.latitude!,
-                                    vehicle.longitude!,
+                            ),
+                            child: Stack(
+                              children: [
+                                // Fondo con icono de mapa
+                                Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.blue.withOpacity(0.2),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          Icons.map_rounded,
+                                          size: 48,
+                                          color: Colors.blue[700],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Toca para ver en Google Maps',
+                                        style: TextStyle(
+                                          color: Colors.blue[900],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.05),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.location_on, size: 14, color: Colors.red[600]),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '${_currentVehicle.latitude!.toStringAsFixed(4)}, ${_currentVehicle.longitude!.toStringAsFixed(4)}',
+                                              style: TextStyle(
+                                                color: Colors.grey[800],
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  infoWindow: InfoWindow(
-                                    title: '${vehicle.brand} ${vehicle.model}',
+                                ),
+                                // Icono de enlace externo
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[700],
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.blue.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
-                              },
+                              ],
                             ),
                           ),
                         ),
-                        */
                       ],
                     ),
                   ],
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -238,27 +476,59 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 class _InfoCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
+  final IconData? icon;
+  final Color? iconColor;
 
   const _InfoCard({
     required this.title,
     required this.children,
+    this.icon,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (iconColor ?? Theme.of(context).primaryColor).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: iconColor ?? Theme.of(context).primaryColor,
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                ],
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ...children,
           ],
         ),
@@ -270,32 +540,60 @@ class _InfoCard extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
+  final IconData? icon;
+  final Color? iconColor;
 
   const _InfoRow({
     required this.label,
     required this.value,
+    this.icon,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+          if (icon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: (iconColor ?? Colors.grey).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: iconColor ?? Colors.grey,
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+          ],
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                ),
+                const SizedBox(width: 16),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[900],
+                          fontWeight: FontWeight.w500,
+                        ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
