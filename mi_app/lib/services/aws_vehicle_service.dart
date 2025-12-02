@@ -87,10 +87,10 @@ class AWSVehicleService {
     } on DioException catch (e) {
       print('❌ DioException en createVehicle: ${e.message}');
       print('❌ Response: ${e.response?.data}');
-      throw Exception('Error de conexión con AWS: ${e.message}');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     } catch (e) {
       print('❌ Error en createVehicle: $e');
-      throw Exception('Error al procesar respuesta: $e');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     }
   }
 
@@ -182,10 +182,10 @@ class AWSVehicleService {
       }
     } on DioException catch (e) {
       print('❌ DioException en getVehicles: ${e.message}');
-      throw Exception('Error de conexión con AWS: ${e.message}');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     } catch (e) {
       print('❌ Error en getVehicles: $e');
-      throw Exception('Error al procesar vehículos: $e');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     }
   }
 
@@ -201,8 +201,8 @@ class AWSVehicleService {
       } else {
         throw Exception('Error al obtener vehículo: ${response.statusCode}');
       }
-    } on DioException catch (e) {
-      throw Exception('Error de conexión con AWS: ${e.message}');
+    } on DioException {
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     }
   }
 
@@ -273,7 +273,7 @@ class AWSVehicleService {
       }
     } on DioException catch (e) {
       print('❌ DioException en updateVehicle: ${e.message}');
-      throw Exception('Error de conexión con AWS: ${e.message}');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     } catch (e) {
       print('❌ Error en updateVehicle: $e');
       rethrow;
@@ -328,7 +328,7 @@ class AWSVehicleService {
       }
     } on DioException catch (e) {
       print('❌ DioException en deleteVehicle: ${e.message}');
-      throw Exception('Error de conexión con AWS: ${e.message}');
+      throw Exception('Error de conexión. Por favor, intenta de nuevo.');
     } catch (e) {
       print('❌ Error en deleteVehicle: $e');
       rethrow;

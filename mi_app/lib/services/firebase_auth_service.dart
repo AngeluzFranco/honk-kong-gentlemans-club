@@ -23,7 +23,7 @@ class FirebaseAuthService {
       userId = credential.user?.uid;
     } on firebase_auth.FirebaseAuthException catch (e) {
       print('FirebaseAuthException en login: ${e.code} - ${e.message}');
-      String message = 'Error al iniciar sesión';
+      String message = 'Error de conexión. Por favor, intenta de nuevo.';
       
       switch (e.code) {
         case 'user-not-found':
@@ -45,10 +45,10 @@ class FirebaseAuthService {
           message = 'Email o contraseña incorrectos';
           break;
         case 'network-request-failed':
-          message = 'Error de conexión. Verifica tu internet';
+          message = 'Error de conexión. Por favor, intenta de nuevo.';
           break;
         default:
-          message = e.message ?? 'Error desconocido al iniciar sesión';
+          message = 'Error de conexión. Por favor, intenta de nuevo.';
       }
       
       return {
@@ -69,19 +69,22 @@ class FirebaseAuthService {
         String? avatarUrl;
         
         // Intentar obtener datos del usuario desde Firestore
-        _firestore
-            .collection('users')
-            .doc(userId)
-            .get()
-            .then((userDoc) {
+        try {
+          final userDoc = await _firestore
+              .collection('users')
+              .doc(userId)
+              .get();
+          
           if (userDoc.exists) {
             final userData = userDoc.data() ?? {};
-            // Actualizar datos si están disponibles
-            print('Datos de Firestore obtenidos: ${userData['name']}');
+            userName = userData['name'] ?? 'Usuario';
+            phoneNumber = userData['phoneNumber'];
+            avatarUrl = userData['avatarUrl'];
+            print('Datos de Firestore obtenidos: $userName');
           }
-        }).catchError((e) {
+        } catch (e) {
           print('No se pudo obtener datos de Firestore: $e');
-        });
+        }
         
         final user = User(
           id: userId,
@@ -103,14 +106,14 @@ class FirebaseAuthService {
         print('Error al procesar login: $e');
         return {
           'success': false,
-          'message': 'Error al procesar inicio de sesión',
+          'message': 'Error de conexión. Por favor, intenta de nuevo.',
         };
       }
     }
     
     return {
       'success': false,
-      'message': 'No se pudo iniciar sesión',
+      'message': 'Error de conexión. Por favor, intenta de nuevo.',
     };
   }
   
@@ -133,7 +136,7 @@ class FirebaseAuthService {
       userId = credential.user?.uid;
     } on firebase_auth.FirebaseAuthException catch (e) {
       print('FirebaseAuthException en register: ${e.code} - ${e.message}');
-      String message = 'Error en el registro';
+      String message = 'Error de conexión. Por favor, intenta de nuevo.';
       
       switch (e.code) {
         case 'email-already-in-use':
@@ -149,10 +152,10 @@ class FirebaseAuthService {
           message = 'Registro con email/password no habilitado';
           break;
         case 'network-request-failed':
-          message = 'Error de conexión. Verifica tu internet';
+          message = 'Error de conexión. Por favor, intenta de nuevo.';
           break;
         default:
-          message = e.message ?? 'Error desconocido en el registro';
+          message = 'Error de conexión. Por favor, intenta de nuevo.';
       }
       
       return {
@@ -200,14 +203,14 @@ class FirebaseAuthService {
         print('Error al procesar usuario: $e');
         return {
           'success': false,
-          'message': 'Error al procesar el registro',
+          'message': 'Error de conexión. Por favor, intenta de nuevo.',
         };
       }
     }
     
     return {
       'success': false,
-      'message': 'No se pudo crear el usuario',
+      'message': 'Error de conexión. Por favor, intenta de nuevo.',
     };
   }
   

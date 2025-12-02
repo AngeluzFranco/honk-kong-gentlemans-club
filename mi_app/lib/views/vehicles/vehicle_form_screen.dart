@@ -289,7 +289,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(vehicleViewModel.errorMessage ?? 'Error al guardar'),
+          content: Text(vehicleViewModel.errorMessage ?? 'Error de conexión. Por favor, intenta de nuevo.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -414,11 +414,11 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
             ),
             const SizedBox(height: 16),
 
-            // VIN
+            // Número de Serie
             TextFormField(
               controller: _vinController,
               decoration: const InputDecoration(
-                labelText: 'VIN (opcional)',
+                labelText: 'Número de Serie (opcional)',
                 prefixIcon: Icon(Icons.fingerprint),
               ),
             ),

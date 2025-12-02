@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import '../models/vehicle_model.dart';
 import '../services/aws_vehicle_service.dart';
 import '../services/vehicle_service.dart';
+import '../services/firebase_notification_service.dart';
 
 class VehicleViewModel extends ChangeNotifier {
   AWSVehicleService? _awsVehicleService;
@@ -62,7 +63,7 @@ class VehicleViewModel extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _errorMessage = 'Error al cargar vehículos: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       _vehicles = [];
     }
     
@@ -99,7 +100,7 @@ class VehicleViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Error al cargar vehículo: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       notifyListeners();
       return false;
     }
@@ -120,6 +121,10 @@ class VehicleViewModel extends ChangeNotifier {
         _successMessage = 'Vehículo creado exitosamente';
         _errorMessage = null;
         _isLoading = false;
+        
+        // Enviar notificación push
+        await _sendVehicleCreatedNotification(createdVehicle);
+        
         notifyListeners();
         return createdVehicle;
       } else {
@@ -131,6 +136,10 @@ class VehicleViewModel extends ChangeNotifier {
           _selectedVehicle = createdVehicle;
           _successMessage = result['message'];
           _errorMessage = null;
+          
+          // Enviar notificación push
+          await _sendVehicleCreatedNotification(createdVehicle);
+          
           notifyListeners();
           return createdVehicle;
         } else {
@@ -141,9 +150,41 @@ class VehicleViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Error al crear vehículo: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       notifyListeners();
       return null;
+    }
+  }
+
+  // Método privado para enviar notificación de creación
+  Future<void> _sendVehicleCreatedNotification(Vehicle vehicle) async {
+    try {
+      final notificationService = FirebaseNotificationService();
+      await notificationService.sendVehicleCreatedNotification(
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year.toString(),
+        imageUrl: vehicle.imageUrl,
+      );
+    } catch (e) {
+      print('⚠️ Error al enviar notificación: $e');
+      // No propagar el error para no afectar la creación del vehículo
+    }
+  }
+
+  // Método privado para enviar notificación de actualización
+  Future<void> _sendVehicleUpdatedNotification(Vehicle vehicle) async {
+    try {
+      final notificationService = FirebaseNotificationService();
+      await notificationService.sendVehicleUpdatedNotification(
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year.toString(),
+        imageUrl: vehicle.imageUrl,
+      );
+    } catch (e) {
+      print('⚠️ Error al enviar notificación: $e');
+      // No propagar el error para no afectar la actualización del vehículo
     }
   }
   
@@ -173,6 +214,10 @@ class VehicleViewModel extends ChangeNotifier {
         _successMessage = 'Vehículo actualizado exitosamente';
         _errorMessage = null;
         _isLoading = false;
+        
+        // Enviar notificación push
+        await _sendVehicleUpdatedNotification(updatedVehicle);
+        
         notifyListeners();
         return true;
       } else {
@@ -191,6 +236,10 @@ class VehicleViewModel extends ChangeNotifier {
           
           _successMessage = result['message'];
           _errorMessage = null;
+          
+          // Enviar notificación push
+          await _sendVehicleUpdatedNotification(result['vehicle']);
+          
           notifyListeners();
           return true;
         } else {
@@ -201,7 +250,7 @@ class VehicleViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Error al actualizar vehículo: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       notifyListeners();
       return false;
     }
@@ -240,7 +289,7 @@ class VehicleViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Error al eliminar vehículo: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       notifyListeners();
       return false;
     }
@@ -271,7 +320,7 @@ class VehicleViewModel extends ChangeNotifier {
           print('✅ Imagen actualizada en vehículo: $vehicleId');
         } else {
           print('⚠️ No se pudo subir la imagen (Lambda UploadImage no configurado)');
-          _errorMessage = 'La imagen no se pudo subir. Configura el Lambda UploadImage en AWS.';
+          _errorMessage = 'Error al subir la imagen. Por favor, intenta de nuevo.';
         }
         
         _isLoading = false;
@@ -280,13 +329,13 @@ class VehicleViewModel extends ChangeNotifier {
       } else {
         // Modo demo - no hay subida de imágenes
         _isLoading = false;
-        _errorMessage = 'Subida de imágenes solo disponible con backend AWS';
+        _errorMessage = 'Servicio no disponible temporalmente';
         notifyListeners();
         return null;
       }
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Error al subir imagen: $e';
+      _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       notifyListeners();
       return null;
     }
