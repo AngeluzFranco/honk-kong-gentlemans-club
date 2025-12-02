@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -37,6 +38,19 @@ class FirebaseNotificationService {
       print('User declined or has not accepted permission');
       return;
     }
+
+    // Crear canal de notificación para Android
+    const androidChannel = AndroidNotificationChannel(
+      'vehicle_channel',
+      'Vehículos',
+      description: 'Notificaciones sobre vehículos',
+      importance: Importance.high,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(androidChannel);
 
     // Configurar notificaciones locales
     const initializationSettingsAndroid =
@@ -169,5 +183,103 @@ class FirebaseNotificationService {
   Future<void> unsubscribeFromTopic(String topic) async {
     await _firebaseMessaging.unsubscribeFromTopic(topic);
     print('Unsubscribed from topic: $topic');
+  }
+
+  // Enviar notificación local cuando se crea un vehículo
+  Future<void> sendVehicleCreatedNotification({
+    required String brand,
+    required String model,
+    required String year,
+    String? imageUrl,
+  }) async {
+    final StyleInformation? bigPictureStyle = imageUrl != null
+        ? BigPictureStyleInformation(
+            FilePathAndroidBitmap(imageUrl),
+            contentTitle: 'Vehículo Creado',
+            summaryText: '$brand $model $year se agregó exitosamente a tu flota',
+            hideExpandedLargeIcon: false,
+          )
+        : null;
+
+    final androidDetails = AndroidNotificationDetails(
+      'vehicle_channel',
+      'Vehículos',
+      channelDescription: 'Notificaciones sobre vehículos',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: 'ic_notification',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: bigPictureStyle ?? const DefaultStyleInformation(true, true),
+      color: const Color(0xFF2563EB),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      attachments: [],
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'Vehículo Creado',
+      '$brand $model $year se agregó exitosamente a tu flota',
+      notificationDetails,
+    );
+  }
+
+  // Enviar notificación local cuando se actualiza un vehículo
+  Future<void> sendVehicleUpdatedNotification({
+    required String brand,
+    required String model,
+    required String year,
+    String? imageUrl,
+  }) async {
+    final StyleInformation? bigPictureStyle = imageUrl != null
+        ? BigPictureStyleInformation(
+            FilePathAndroidBitmap(imageUrl),
+            contentTitle: 'Vehículo Actualizado',
+            summaryText: '$brand $model $year se actualizó correctamente',
+            hideExpandedLargeIcon: false,
+          )
+        : null;
+
+    final androidDetails = AndroidNotificationDetails(
+      'vehicle_channel',
+      'Vehículos',
+      channelDescription: 'Notificaciones sobre vehículos',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: 'ic_notification',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: bigPictureStyle ?? const DefaultStyleInformation(true, true),
+      color: const Color(0xFF2563EB),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      attachments: [],
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'Vehículo Actualizado',
+      '$brand $model $year se actualizó correctamente',
+      notificationDetails,
+    );
   }
 }
