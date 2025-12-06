@@ -1,29 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import '../models/user_model.dart';
 import '../services/firebase_auth_service.dart';
-import '../services/auth_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  FirebaseAuthService? _firebaseAuthService;
-  AuthService? _demoAuthService;
-  
-  // Lazy initialization de servicios
-  FirebaseAuthService? get _firebaseService {
-    try {
-      if (_firebaseAuthService == null && Firebase.apps.isNotEmpty) {
-        _firebaseAuthService = FirebaseAuthService();
-      }
-      return _firebaseAuthService;
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  AuthService get _demoService {
-    _demoAuthService ??= AuthService();
-    return _demoAuthService!;
-  }
+  final FirebaseAuthService _authService = FirebaseAuthService();
   
   User? _currentUser;
   bool _isLoading = false;
@@ -42,11 +22,10 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final dynamic service = _firebaseService ?? _demoService;
-      _isLoggedIn = await service.isLoggedIn();
+      _isLoggedIn = await _authService.isLoggedIn();
       
       if (_isLoggedIn) {
-        _currentUser = await service.getCurrentUser();
+        _currentUser = await _authService.getCurrentUser();
       }
     } catch (e) {
       debugPrint('Error en init: $e');
@@ -63,8 +42,7 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final dynamic service = _firebaseService ?? _demoService;
-    final result = await service.login(email, password);
+    final result = await _authService.login(email, password);
     
     _isLoading = false;
     
@@ -86,18 +64,15 @@ class AuthViewModel extends ChangeNotifier {
     required String email,
     required String password,
     required String name,
-    String? phoneNumber,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     
-    final dynamic service = _firebaseService ?? _demoService;
-    final result = await service.register(
+    final result = await _authService.register(
       email: email,
       password: password,
       name: name,
-      phoneNumber: phoneNumber,
     );
     
     _isLoading = false;
@@ -120,8 +95,7 @@ class AuthViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    final dynamic service = _firebaseService ?? _demoService;
-    await service.logout();
+    await _authService.logout();
     
     _currentUser = null;
     _isLoggedIn = false;
@@ -139,8 +113,6 @@ class AuthViewModel extends ChangeNotifier {
   
   // Actualizar FCM token
   Future<void> updateFcmToken(String token) async {
-    if (_firebaseService != null) {
-      await _firebaseService!.updateFcmToken(token);
-    }
+    await _authService.updateFcmToken(token);
   }
 }

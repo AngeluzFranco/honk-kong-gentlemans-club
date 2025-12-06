@@ -65,8 +65,6 @@ class FirebaseAuthService {
     if (userId != null && userId.isNotEmpty) {
       try {
         String userName = 'Usuario';
-        String? phoneNumber;
-        String? avatarUrl;
         
         // Intentar obtener datos del usuario desde Firestore
         try {
@@ -78,8 +76,6 @@ class FirebaseAuthService {
           if (userDoc.exists) {
             final userData = userDoc.data() ?? {};
             userName = userData['name'] ?? 'Usuario';
-            phoneNumber = userData['phoneNumber'];
-            avatarUrl = userData['avatarUrl'];
             print('Datos de Firestore obtenidos: $userName');
           }
         } catch (e) {
@@ -90,8 +86,6 @@ class FirebaseAuthService {
           id: userId,
           email: email,
           name: userName,
-          phoneNumber: phoneNumber,
-          avatarUrl: avatarUrl,
         );
         
         // Guardar localmente
@@ -122,7 +116,6 @@ class FirebaseAuthService {
     required String email,
     required String password,
     required String name,
-    String? phoneNumber,
   }) async {
     firebase_auth.UserCredential? credential;
     String? userId;
@@ -175,8 +168,6 @@ class FirebaseAuthService {
           id: userId,
           email: email,
           name: name,
-          phoneNumber: phoneNumber,
-          avatarUrl: null,
         );
         
         // Guardar localmente primero
@@ -186,8 +177,6 @@ class FirebaseAuthService {
         _firestore.collection('users').doc(userId).set({
           'name': name,
           'email': email,
-          'phoneNumber': phoneNumber,
-          'avatarUrl': null,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         }).catchError((e) {
@@ -252,8 +241,6 @@ class FirebaseAuthService {
         id: firebaseUser.uid,
         email: firebaseUser.email!,
         name: userData['name'] ?? 'Usuario',
-        phoneNumber: userData['phoneNumber'],
-        avatarUrl: userData['avatarUrl'],
       );
       await _saveUserLocally(user);
       return user;

@@ -1,31 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import '../models/vehicle_model.dart';
 import '../services/aws_vehicle_service.dart';
-import '../services/vehicle_service.dart';
 import '../services/firebase_notification_service.dart';
 
 class VehicleViewModel extends ChangeNotifier {
-  AWSVehicleService? _awsVehicleService;
-  VehicleService? _demoVehicleService;
-  
-  // Lazy initialization de servicios
-  AWSVehicleService? get _awsService {
-    try {
-      if (_awsVehicleService == null && Firebase.apps.isNotEmpty) {
-        _awsVehicleService = AWSVehicleService();
-      }
-      return _awsVehicleService;
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  VehicleService get _demoService {
-    _demoVehicleService ??= VehicleService();
-    return _demoVehicleService!;
-  }
+  final AWSVehicleService _vehicleService = AWSVehicleService();
   
   List<Vehicle> _vehicles = [];
   Vehicle? _selectedVehicle;
@@ -47,21 +27,8 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        // Usar servicio AWS
-        _vehicles = await _awsService!.getVehicles();
-        _errorMessage = null;
-      } else {
-        // Usar servicio demo
-        final result = await _demoService.getVehicles();
-        if (result['success']) {
-          _vehicles = result['vehicles'];
-          _errorMessage = null;
-        } else {
-          _errorMessage = result['message'];
-          _vehicles = [];
-        }
-      }
+      _vehicles = await _vehicleService.getVehicles();
+      _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
       _vehicles = [];
@@ -78,26 +45,11 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        _selectedVehicle = await _awsService!.getVehicleById(id);
-        _errorMessage = null;
-        _isLoading = false;
-        notifyListeners();
-        return _selectedVehicle != null;
-      } else {
-        final result = await _demoService.getVehicleById(id);
-        _isLoading = false;
-        if (result['success']) {
-          _selectedVehicle = result['vehicle'];
-          _errorMessage = null;
-          notifyListeners();
-          return true;
-        } else {
-          _errorMessage = result['message'];
-          notifyListeners();
-          return false;
-        }
-      }
+      _selectedVehicle = await _vehicleService.getVehicleById(id);
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return _selectedVehicle != null;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
@@ -114,40 +66,18 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        final createdVehicle = await _awsService!.createVehicle(vehicle);
-        _vehicles.add(createdVehicle);
-        _selectedVehicle = createdVehicle; // Guardar como seleccionado
-        _successMessage = 'Vehículo creado exitosamente';
-        _errorMessage = null;
-        _isLoading = false;
-        
-        // Enviar notificación push
-        await _sendVehicleCreatedNotification(createdVehicle);
-        
-        notifyListeners();
-        return createdVehicle;
-      } else {
-        final result = await _demoService.createVehicle(vehicle);
-        _isLoading = false;
-        if (result['success']) {
-          final createdVehicle = result['vehicle'] as Vehicle;
-          _vehicles.add(createdVehicle);
-          _selectedVehicle = createdVehicle;
-          _successMessage = result['message'];
-          _errorMessage = null;
-          
-          // Enviar notificación push
-          await _sendVehicleCreatedNotification(createdVehicle);
-          
-          notifyListeners();
-          return createdVehicle;
-        } else {
-          _errorMessage = result['message'];
-          notifyListeners();
-          return null;
-        }
-      }
+      final createdVehicle = await _vehicleService.createVehicle(vehicle);
+      _vehicles.add(createdVehicle);
+      _selectedVehicle = createdVehicle;
+      _successMessage = 'Vehículo creado exitosamente';
+      _errorMessage = null;
+      _isLoading = false;
+      
+      // Enviar notificación push
+      await _sendVehicleCreatedNotification(createdVehicle);
+      
+      notifyListeners();
+      return createdVehicle;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
@@ -196,58 +126,26 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        // Obtener el vehículo actualizado desde el servidor
-        final updatedVehicle = await _awsService!.updateVehicle(vehicle);
-        
-        // Actualizar el vehículo en la lista local con los datos del servidor
-        final index = _vehicles.indexWhere((v) => v.id == id);
-        if (index != -1) {
-          _vehicles[index] = updatedVehicle;
-        }
-        
-        // También actualizar el vehículo seleccionado si es el mismo
-        if (_selectedVehicle?.id == id) {
-          _selectedVehicle = updatedVehicle;
-        }
-        
-        _successMessage = 'Vehículo actualizado exitosamente';
-        _errorMessage = null;
-        _isLoading = false;
-        
-        // Enviar notificación push
-        await _sendVehicleUpdatedNotification(updatedVehicle);
-        
-        notifyListeners();
-        return true;
-      } else {
-        final result = await _demoService.updateVehicle(id, vehicle);
-        _isLoading = false;
-        if (result['success']) {
-          final index = _vehicles.indexWhere((v) => v.id == id);
-          if (index != -1) {
-            _vehicles[index] = result['vehicle'];
-          }
-          
-          // También actualizar el vehículo seleccionado
-          if (_selectedVehicle?.id == id) {
-            _selectedVehicle = result['vehicle'];
-          }
-          
-          _successMessage = result['message'];
-          _errorMessage = null;
-          
-          // Enviar notificación push
-          await _sendVehicleUpdatedNotification(result['vehicle']);
-          
-          notifyListeners();
-          return true;
-        } else {
-          _errorMessage = result['message'];
-          notifyListeners();
-          return false;
-        }
+      final updatedVehicle = await _vehicleService.updateVehicle(vehicle);
+      
+      final index = _vehicles.indexWhere((v) => v.id == id);
+      if (index != -1) {
+        _vehicles[index] = updatedVehicle;
       }
+      
+      if (_selectedVehicle?.id == id) {
+        _selectedVehicle = updatedVehicle;
+      }
+      
+      _successMessage = 'Vehículo actualizado exitosamente';
+      _errorMessage = null;
+      _isLoading = false;
+      
+      // Enviar notificación push
+      await _sendVehicleUpdatedNotification(updatedVehicle);
+      
+      notifyListeners();
+      return true;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
@@ -264,29 +162,13 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        await _awsService!.deleteVehicle(id);
-        _vehicles.removeWhere((v) => v.id == id);
-        _successMessage = 'Vehículo eliminado exitosamente';
-        _errorMessage = null;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        final result = await _demoService.deleteVehicle(id);
-        _isLoading = false;
-        if (result['success']) {
-          _vehicles.removeWhere((v) => v.id == id);
-          _successMessage = result['message'];
-          _errorMessage = null;
-          notifyListeners();
-          return true;
-        } else {
-          _errorMessage = result['message'];
-          notifyListeners();
-          return false;
-        }
-      }
+      await _vehicleService.deleteVehicle(id);
+      _vehicles.removeWhere((v) => v.id == id);
+      _successMessage = 'Vehículo eliminado exitosamente';
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';
@@ -302,37 +184,29 @@ class VehicleViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      if (_awsService != null) {
-        final imageFile = File(imagePath);
-        final imageUrl = await _awsService!.uploadVehicleImage(imageFile, vehicleId);
-        
-        if (imageUrl != null) {
-          // Actualizar URL en la lista local
-          final index = _vehicles.indexWhere((v) => v.id == vehicleId);
-          if (index != -1) {
-            _vehicles[index] = _vehicles[index].copyWith(imageUrl: imageUrl);
-          }
-          
-          if (_selectedVehicle?.id == vehicleId) {
-            _selectedVehicle = _selectedVehicle!.copyWith(imageUrl: imageUrl);
-          }
-          
-          print('✅ Imagen actualizada en vehículo: $vehicleId');
-        } else {
-          print('⚠️ No se pudo subir la imagen (Lambda UploadImage no configurado)');
-          _errorMessage = 'Error al subir la imagen. Por favor, intenta de nuevo.';
+      final imageFile = File(imagePath);
+      final imageUrl = await _vehicleService.uploadVehicleImage(imageFile, vehicleId);
+      
+      if (imageUrl != null) {
+        // Actualizar URL en la lista local
+        final index = _vehicles.indexWhere((v) => v.id == vehicleId);
+        if (index != -1) {
+          _vehicles[index] = _vehicles[index].copyWith(imageUrl: imageUrl);
         }
         
-        _isLoading = false;
-        notifyListeners();
-        return imageUrl;
+        if (_selectedVehicle?.id == vehicleId) {
+          _selectedVehicle = _selectedVehicle!.copyWith(imageUrl: imageUrl);
+        }
+        
+        print('✅ Imagen actualizada en vehículo: $vehicleId');
       } else {
-        // Modo demo - no hay subida de imágenes
-        _isLoading = false;
-        _errorMessage = 'Servicio no disponible temporalmente';
-        notifyListeners();
-        return null;
+        print('⚠️ No se pudo subir la imagen (Lambda UploadImage no configurado)');
+        _errorMessage = 'Error al subir la imagen. Por favor, intenta de nuevo.';
       }
+      
+      _isLoading = false;
+      notifyListeners();
+      return imageUrl;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Error de conexión. Por favor, intenta de nuevo.';

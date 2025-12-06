@@ -15,7 +15,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -25,7 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -49,9 +47,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         name: _nameController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isNotEmpty
-            ? _phoneController.text.trim()
-            : null,
       );
 
       if (!mounted) return;
@@ -241,42 +236,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             validator: Validators.validateEmail,
-                          ),
-                          const SizedBox(height: 20),
-                
-                          // Teléfono (opcional)
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              labelText: 'Teléfono (opcional)',
-                              hintText: '1234567890',
-                              prefixIcon: Icon(
-                                Icons.phone_rounded,
-                                color: Theme.of(context).primaryColor,
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Colors.grey[200]!,
-                                  width: 1,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).primaryColor,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            validator: Validators.validatePhone,
                           ),
                           const SizedBox(height: 20),
                 
