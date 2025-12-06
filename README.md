@@ -161,6 +161,43 @@ lib/
 
 ## 🧪 Testing
 
+### Tests Unitarios (25 tests)
+Tests completos de los modelos de datos:
+```bash
+flutter test test/models/
+```
+
+### Tests de Integración
+Tests end-to-end del flujo completo de la aplicación:
+
+```bash
+# Todos los tests de integración
+flutter test integration_test/
+
+# Test del flujo principal completo (Login → CRUD → Logout)
+flutter test integration_test/app_test.dart
+
+# Tests de autenticación
+flutter test integration_test/auth_flow_test.dart
+
+# Tests CRUD de vehículos
+flutter test integration_test/vehicle_crud_test.dart
+```
+
+### Scripts Helper (PowerShell)
+En Windows, puedes usar los scripts helper:
+```powershell
+# Cargar helpers
+. .\test_helpers.ps1
+
+# Ejecutar tests específicos
+Run-AuthTests
+Run-VehicleTests
+Run-AllTests
+```
+
+### Scripts Helper (Bash)
+En Linux/Mac:
 ```bash
 flutter test
 ```
